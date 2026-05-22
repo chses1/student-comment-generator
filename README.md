@@ -34,6 +34,26 @@ npm run build
 
 第一次啟用時，請到 repository 的 Settings > Pages，將 Source 設為 `GitHub Actions`。不要選 `Deploy from a branch` 的根目錄，否則 GitHub Pages 會直接載入原始碼入口 `index.html`，導致 `/main.jsx` 404。
 
+### GitHub Actions 環境變數
+
+到 repository 的 Settings > Secrets and variables > Actions：
+
+- 在 Secrets 新增 `VITE_GEMINI_API_KEY`
+- 在 Secrets 新增 `VITE_FIREBASE_CONFIG`
+- 在 Variables 新增 `VITE_FIREBASE_APP_ID`
+
+`VITE_FIREBASE_CONFIG` 請填 Firebase Web App config 的完整 JSON 字串，例如：
+
+```json
+{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}
+```
+
+設定完成後，到 Actions 手動重新執行 `Deploy to GitHub Pages`，或推送一次新提交。
+
+### Firestore 規則
+
+到 Firebase Console > Firestore Database > Rules，套用 `firestore.rules.example` 的內容，確保每位使用者只能讀寫自己的資料。
+
 ## 安全提醒
 
 - 不要把 `.env.local`、API Key、Firebase 私密憑證提交到 GitHub。
