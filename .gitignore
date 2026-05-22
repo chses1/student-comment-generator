@@ -1,0 +1,22 @@
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Local environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs and caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vite/
+.cache/
