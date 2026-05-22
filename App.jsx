@@ -3,12 +3,12 @@ import {
   Copy, Check, AlertTriangle, 
   User, AlertCircle, Trash2, RefreshCw, Sparkles, Loader2,
   FileText, Award, Heart, Plus, Edit,
-  Users, X, Cloud, LogIn
+  Users, X, Cloud, LogIn, LogOut
 } from 'lucide-react';
 
 // --- Firebase 雲端儲存設定 ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from 'firebase/auth';
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 let app, auth, db, appId, firebaseConfig, firebaseSetupError;
@@ -239,6 +239,7 @@ function ReportCardView({ user }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [regeneratingKeys, setRegeneratingKeys] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
 
   const [activeStrengthTab, setActiveStrengthTab] = useState(0);
@@ -311,6 +312,15 @@ function ReportCardView({ user }) {
     }
   };
 
+  const saveStudentList = async (newList) => {
+    setStudents(newList);
+    if (user && db) {
+      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'classData', 'main'), { students: newList });
+    } else {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ students: newList }));
+    }
+  };
+
   // Google 登入功能 (支援無縫綁定單機版資料)
   const handleGoogleLogin = async () => {
     if (!auth) {
@@ -343,6 +353,23 @@ function ReportCardView({ user }) {
       } else {
         setErrorMsg("登入失敗，請確認 Firebase Authentication 已啟用 Google 登入，並已加入 chses1.github.io 授權網域。");
       }
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!auth) return;
+
+    try {
+      await signOut(auth);
+      await signInAnonymously(auth);
+      setActiveStudentName('');
+      setStrengths('');
+      setWeaknesses('');
+      setResult(null);
+      setErrorMsg('');
+    } catch (err) {
+      console.error("登出失敗", err);
+      setErrorMsg("登出失敗，請重新整理頁面後再試一次。");
     }
   };
 
@@ -472,6 +499,22 @@ function ReportCardView({ user }) {
     updateStudentData({ strengths: '', weaknesses: '', result: null });
   };
 
+  const executeClearAllStudents = async () => {
+    try {
+      await saveStudentList([]);
+      setActiveStudentName('');
+      setStrengths('');
+      setWeaknesses('');
+      setResult(null);
+      setErrorMsg('');
+      setShowClearAllConfirm(false);
+    } catch (err) {
+      console.error("清除名單失敗", err);
+      setErrorMsg("清除名單失敗，請稍後再試一次。");
+      setShowClearAllConfirm(false);
+    }
+  };
+
   return (
     <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full relative">
       
@@ -487,7 +530,8 @@ function ReportCardView({ user }) {
           </label>
           <div className="flex flex-col gap-3">
             {user && !user.isAnonymous ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
                  <div className="flex items-center gap-3">
                    <div className="w-10 h-10 bg-emerald-200 rounded-full flex items-center justify-center font-bold text-emerald-700">
                       {user.displayName ? user.displayName.charAt(0) : 'T'}
@@ -498,6 +542,10 @@ function ReportCardView({ user }) {
                    </div>
                  </div>
                  <Check className="text-emerald-500" />
+                </div>
+                <button onClick={handleLogout} className="flex justify-center items-center gap-2 bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-bold py-2 rounded-xl transition-colors shadow-sm text-xs">
+                  <LogOut size={16} /> 登出 Google 帳號
+                </button>
               </div>
             ) : (
               <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 flex flex-col gap-3">
@@ -526,6 +574,11 @@ function ReportCardView({ user }) {
               <Plus size={14} /> 匯入
             </button>
           </div>
+          {students.length > 0 && (
+            <button onClick={() => setShowClearAllConfirm(true)} className="mb-3 w-full flex justify-center items-center gap-2 text-sm bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-2 rounded-xl font-bold transition-colors border border-rose-100 shadow-sm">
+              <Trash2 size={14} /> 清除所有名單
+            </button>
+          )}
           
           {students.length > 0 ? (
             <div className="bg-stone-50 rounded-xl p-3 border border-stone-200 flex-1 overflow-y-auto">
@@ -686,15 +739,14 @@ function ReportCardView({ user }) {
       </div>
 
       <ConfirmDialog isOpen={showConfirm} message={`確定要清空「${activeStudentName}」的設定嗎？`} onConfirm={executeClear} onCancel={() => setShowConfirm(false)} />
+      <ConfirmDialog isOpen={showClearAllConfirm} message="確定要清除所有班級名單與評語紀錄嗎？此動作無法復原。" onConfirm={executeClearAllStudents} onCancel={() => setShowClearAllConfirm(false)} />
       
       <StudentListModal 
         isOpen={showStudentModal} 
         onClose={() => setShowStudentModal(false)} 
         students={students} 
         setStudents={(newList) => {
-          setStudents(newList);
-          if (user && db) setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'classData', 'main'), { students: newList });
-          if (!user || !db) window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ students: newList }));
+          saveStudentList(newList);
         }} 
       />
     </div>
