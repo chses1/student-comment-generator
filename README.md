@@ -30,9 +30,9 @@ npm run build
 
 ## GitHub Pages 部署
 
-此專案已包含 GitHub Actions 部署流程。推送到 `main` 後，GitHub 會自動建置 Vite 專案並發布 `dist` 到 GitHub Pages。
+此專案已包含 GitHub Actions 部署流程。推送到 `main` 後，GitHub 會自動建置 Vite 專案並發布 `docs` 到 GitHub Pages。
 
-第一次啟用時，請到 repository 的 Settings > Pages，將 Source 設為 `GitHub Actions`。
+第一次啟用時，請到 repository 的 Settings > Pages，將 Source 設為 `GitHub Actions`。如果你想不用 Actions，也可以將 Source 設為 `Deploy from a branch`，Branch 選 `main`，資料夾選 `/docs`。
 
 ## 安全提醒
 
