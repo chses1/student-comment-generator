@@ -28,6 +28,12 @@ npm run dev
 npm run build
 ```
 
+## GitHub Pages 部署
+
+此專案已包含 GitHub Actions 部署流程。推送到 `main` 後，GitHub 會自動建置 Vite 專案並發布 `dist` 到 GitHub Pages。
+
+第一次啟用時，請到 repository 的 Settings > Pages，將 Source 設為 `GitHub Actions`。
+
 ## 安全提醒
 
 - 不要把 `.env.local`、API Key、Firebase 私密憑證提交到 GitHub。
