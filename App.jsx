@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
 }
 
 // --- API 設定 ---
-const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const LOCAL_STORAGE_KEY = "student-comment-generator:classData";
 
 const getGeminiApiKey = () => {
