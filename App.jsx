@@ -11,14 +11,24 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-let app, auth, db, appId, firebaseConfig;
+let app, auth, db, appId, firebaseConfig, firebaseSetupError;
 if (typeof window !== 'undefined') {
   const viteFirebaseConfig = import.meta.env ? import.meta.env.VITE_FIREBASE_CONFIG : '';
-  firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : JSON.parse(viteFirebaseConfig || '{}');
-  if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
+  try {
+    firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : JSON.parse(viteFirebaseConfig || '{}');
+    const hasFirebaseConfig = firebaseConfig && Object.keys(firebaseConfig).length > 0;
+    const isFirebaseConfigComplete = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId;
+
+    if (hasFirebaseConfig && isFirebaseConfigComplete) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } else if (hasFirebaseConfig) {
+      firebaseSetupError = "Firebase 設定不完整，請確認 VITE_FIREBASE_CONFIG 包含 apiKey、authDomain、projectId、appId。";
+    }
+  } catch (error) {
+    firebaseSetupError = "Firebase 設定格式錯誤，請確認 VITE_FIREBASE_CONFIG 是一行完整 JSON。";
+    console.error("Firebase config error:", error);
   }
   appId = typeof __app_id !== 'undefined' ? __app_id : ((import.meta.env && import.meta.env.VITE_FIREBASE_APP_ID) || 'default-app-id');
 }
@@ -163,6 +173,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Auth init error:", err);
+        setIsAuthLoading(false);
       }
     };
     initAuth();
@@ -303,7 +314,7 @@ function ReportCardView({ user }) {
   // Google 登入功能 (支援無縫綁定單機版資料)
   const handleGoogleLogin = async () => {
     if (!auth) {
-      setErrorMsg("尚未設定 Firebase，暫時無法使用 Google 登入與雲端同步。");
+      setErrorMsg(firebaseSetupError || "尚未設定 Firebase，暫時無法使用 Google 登入與雲端同步。");
       return;
     }
 
@@ -327,7 +338,11 @@ function ReportCardView({ user }) {
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg("登入失敗，請確認您的設定或稍後再試。");
+      if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || err.code === 'auth/invalid-api-key') {
+        setErrorMsg("Firebase API Key 無效。請確認 VITE_FIREBASE_CONFIG 使用的是 Firebase Web App config，不是 Gemini API key。");
+      } else {
+        setErrorMsg("登入失敗，請確認 Firebase Authentication 已啟用 Google 登入，並已加入 chses1.github.io 授權網域。");
+      }
     }
   };
 
