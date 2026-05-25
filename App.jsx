@@ -8,7 +8,7 @@ import {
 
 // --- Firebase 雲端儲存設定 ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from 'firebase/auth';
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signInWithRedirect, linkWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 let app, auth, db, appId, firebaseConfig, firebaseSetupError;
@@ -43,6 +43,54 @@ const getGeminiApiKey = () => {
   const runtimeKey = typeof window !== 'undefined' ? window.__gemini_api_key__ : '';
   const viteKey = import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '';
   return runtimeKey || viteKey || '';
+};
+
+const shouldUseRedirectLogin = () => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const userAgent = navigator.userAgent || '';
+  const isMobileUserAgent = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(userAgent);
+  const isEmbeddedBrowser = /Line|FBAN|FBAV|Instagram|MicroMessenger/i.test(userAgent);
+  const isNarrowScreen = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  const hasCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  return isMobileUserAgent || isEmbeddedBrowser || (isNarrowScreen && hasCoarsePointer);
+};
+
+const isCredentialAlreadyUsedError = (error) => {
+  return error && (error.code === 'auth/credential-already-in-use' || error.code === 'auth/email-already-in-use');
+};
+
+const isPopupBlockedError = (error) => {
+  return error && (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request');
+};
+
+const getAuthErrorMessage = (error, fallbackMessage) => {
+  if (!error) return fallbackMessage;
+
+  if (error.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || error.code === 'auth/invalid-api-key') {
+    return "Firebase API Key 無效。請確認 VITE_FIREBASE_CONFIG 使用的是 Firebase Web App config，不是 Gemini API key。";
+  }
+
+  if (isCredentialAlreadyUsedError(error)) {
+    return "這個 Google 帳號已經綁定過資料。請直接使用該 Google 帳號登入；若目前是單機版資料，建議先確認資料已保留，再登入雲端帳號。";
+  }
+
+  if (error.code === 'auth/unauthorized-domain') {
+    return "登入失敗：目前網址尚未加入 Firebase Authentication 授權網域，請到 Firebase Console 加入正式部署網域。";
+  }
+
+  if (isPopupBlockedError(error)) {
+    return "瀏覽器封鎖了 Google 登入彈出視窗，系統會改用跳轉登入。若您使用 LINE、Facebook 或其他 App 內建瀏覽器，建議改用 Safari 或 Chrome 開啟。";
+  }
+
+  if (error.code === 'auth/operation-not-allowed') {
+    return "登入失敗：Firebase Authentication 尚未啟用 Google 登入方式。";
+  }
+
+  if (error.code === 'auth/web-storage-unsupported') {
+    return "登入失敗：目前瀏覽器封鎖了必要的儲存功能，請改用 Safari 或 Chrome 開啟。";
+  }
+
+  return fallbackMessage;
 };
 
 // --- 輔助工具 ---
@@ -150,6 +198,7 @@ const WEAKNESS_OPTIONS = [
 export default function App() {
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true); // 新增：判斷是否正在自動捕捉帳號
+  const [authStatusMessage, setAuthStatusMessage] = useState('');
 
   // 初始化登入狀態
   useEffect(() => {
@@ -164,6 +213,16 @@ export default function App() {
         if (auth.authStateReady) {
           await auth.authStateReady();
         }
+
+        try {
+          await getRedirectResult(auth);
+        } catch (redirectErr) {
+          console.error("Redirect login error:", redirectErr);
+          setAuthStatusMessage(getAuthErrorMessage(
+            redirectErr,
+            "Google 登入回到系統時發生問題。若您使用 LINE、Facebook 或其他 App 內建瀏覽器，請改用 Safari 或 Chrome 開啟後再試。"
+          ));
+        }
         
         // 2. 如果沒有捕捉到既有帳號，才建立/讀取單機版 (匿名) 帳號
         if (!auth.currentUser) {
@@ -175,6 +234,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Auth init error:", err);
+        setAuthStatusMessage(getAuthErrorMessage(err, "登入狀態確認失敗，系統已先保留單機版使用。"));
         setIsAuthLoading(false);
       }
     };
@@ -219,7 +279,7 @@ export default function App() {
         </div>
       </header>
       <main className="flex-1 p-3 md:p-5 xl:p-6 w-full relative">
-        <ReportCardView user={user} />
+        <ReportCardView user={user} authStatusMessage={authStatusMessage} />
       </main>
     </div>
   );
@@ -228,7 +288,7 @@ export default function App() {
 // ==========================================
 // 學生評語產生器 (ReportCardView)
 // ==========================================
-function ReportCardView({ user }) {
+function ReportCardView({ user, authStatusMessage }) {
   // 核心狀態：學生陣列。結構 [{ name: string, strengths: string, weaknesses: string, result: object | null }]
   const [students, setStudents] = useState([]);
   const [activeStudentName, setActiveStudentName] = useState('');
@@ -250,6 +310,12 @@ function ReportCardView({ user }) {
   const [activeWeaknessTab, setActiveWeaknessTab] = useState(0);
   const [customStrength, setCustomStrength] = useState('');
   const [customWeakness, setCustomWeakness] = useState('');
+
+  useEffect(() => {
+    if (authStatusMessage) {
+      setErrorMsg(authStatusMessage);
+    }
+  }, [authStatusMessage]);
 
   // 1. 監聽 Firebase 資料；未設定 Firebase 時改用本機瀏覽器儲存
   useEffect(() => {
@@ -332,8 +398,26 @@ function ReportCardView({ user }) {
       return;
     }
 
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const useRedirect = shouldUseRedirectLogin();
+
+    const loginWithRedirect = async () => {
+      if (user && user.isAnonymous) {
+        await linkWithRedirect(user, provider);
+      } else {
+        await signInWithRedirect(auth, provider);
+      }
+    };
+
     try {
-      const provider = new GoogleAuthProvider();
+      setErrorMsg('');
+
+      if (useRedirect) {
+        await loginWithRedirect();
+        return;
+      }
+
       if (user && user.isAnonymous) {
         try {
           // 嘗試將單機版進度綁定至 Google 帳號
@@ -342,9 +426,12 @@ function ReportCardView({ user }) {
           // 如果該 Google 帳號已被使用，則切換登入
           if (linkErr.code === 'auth/credential-already-in-use' || linkErr.code === 'auth/email-already-in-use') {
             await signInWithPopup(auth, provider);
+          } else if (isPopupBlockedError(linkErr)) {
+            setErrorMsg(getAuthErrorMessage(linkErr, "瀏覽器封鎖了彈出視窗，系統會改用跳轉登入。"));
+            await loginWithRedirect();
           } else {
             console.error("綁定失敗", linkErr);
-            setErrorMsg("登入失敗，請確認您的設定或稍後再試。");
+            setErrorMsg(getAuthErrorMessage(linkErr, "登入失敗，請確認您的設定或稍後再試。"));
           }
         }
       } else {
@@ -352,10 +439,22 @@ function ReportCardView({ user }) {
       }
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' || err.code === 'auth/invalid-api-key') {
-        setErrorMsg("Firebase API Key 無效。請確認 VITE_FIREBASE_CONFIG 使用的是 Firebase Web App config，不是 Gemini API key。");
+      if (!useRedirect && isPopupBlockedError(err)) {
+        setErrorMsg(getAuthErrorMessage(err, "瀏覽器封鎖了彈出視窗，系統會改用跳轉登入。"));
+        try {
+          await loginWithRedirect();
+        } catch (redirectErr) {
+          console.error(redirectErr);
+          setErrorMsg(getAuthErrorMessage(
+            redirectErr,
+            "跳轉登入失敗。若您使用 LINE、Facebook 或其他 App 內建瀏覽器，請改用 Safari 或 Chrome 開啟。"
+          ));
+        }
       } else {
-        setErrorMsg("登入失敗，請確認 Firebase Authentication 已啟用 Google 登入，並已加入 chses1.github.io 授權網域。");
+        setErrorMsg(getAuthErrorMessage(
+          err,
+          "登入失敗，請確認 Firebase Authentication 已啟用 Google 登入，並已加入正式部署網址的授權網域。若您使用 LINE、Facebook 或其他 App 內建瀏覽器，請改用 Safari 或 Chrome 開啟。"
+        ));
       }
     }
   };
