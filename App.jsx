@@ -36,6 +36,8 @@ if (typeof window !== 'undefined') {
 // --- API 設定 ---
 const GEMINI_MODEL = "gemini-2.5-flash";
 const LOCAL_STORAGE_KEY = "student-comment-generator:classData";
+const APP_TITLE = "中山國小學生評語生成系統";
+const SCHOOL_LOGO_SRC = import.meta.env.BASE_URL + "chungshan-logo.jpg";
 
 const getGeminiApiKey = () => {
   const runtimeKey = typeof window !== 'undefined' ? window.__gemini_api_key__ : '';
@@ -199,18 +201,20 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-pink-50 font-sans text-stone-700 overflow-x-hidden overflow-y-auto">
-      <header className="bg-white border-b border-pink-100 px-5 md:px-8 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="bg-pink-400 p-2 rounded-xl shadow-sm shrink-0">
-            <Heart className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center md:gap-3">
-            <h1 className="text-xl md:text-2xl font-extrabold text-pink-800 tracking-wide">
-              班級導師評語生成系統
+      <header className="bg-white border-b border-pink-100 px-4 md:px-8 py-4 flex justify-between items-center gap-3 sticky top-0 z-40 shadow-sm shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <img
+            src={SCHOOL_LOGO_SRC}
+            alt="中山國小校徽"
+            className="w-12 h-12 rounded-full object-cover border-2 border-pink-200 bg-white shadow-sm shrink-0"
+          />
+          <div className="flex flex-col md:flex-row md:items-center md:gap-3 min-w-0">
+            <h1 className="text-base sm:text-xl md:text-2xl font-extrabold text-pink-800 tracking-wide leading-tight">
+              {APP_TITLE}
             </h1>
           </div>
         </div>
-        <div className="text-sm font-bold text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-pink-200">
+        <div className="text-xs sm:text-sm font-bold text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-pink-200 shrink-0">
            {user && !user.isAnonymous ? <><Cloud size={16}/> 雲端同步中</> : <><User size={16}/> 單機版 (免登入)</>}
         </div>
       </header>
