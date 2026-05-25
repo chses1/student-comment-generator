@@ -214,7 +214,7 @@ export default function App() {
            {user && !user.isAnonymous ? <><Cloud size={16}/> 雲端同步中</> : <><User size={16}/> 單機版 (免登入)</>}
         </div>
       </header>
-      <main className="flex-1 p-4 md:p-8 w-full relative">
+      <main className="flex-1 p-3 md:p-5 xl:p-6 w-full relative">
         <ReportCardView user={user} />
       </main>
     </div>
@@ -516,12 +516,12 @@ function ReportCardView({ user }) {
   };
 
   return (
-    <div className="max-w-[1600px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-full relative">
+    <div className="max-w-none w-full mx-auto grid grid-cols-1 lg:grid-cols-[minmax(22rem,26rem)_minmax(0,1fr)] xl:grid-cols-[minmax(24rem,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(26rem,32rem)_minmax(0,1fr)] gap-4 xl:gap-6 h-full relative">
       
       {/* ======================================= */}
       {/* 左側欄：登入與名單 (視窗捲動時自動固定)  */}
       {/* ======================================= */}
-      <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:self-start z-10">
+      <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:self-start z-10">
         
         {/* 第一步：登入狀態與單機版說明 */}
         <div className="bg-white border border-pink-200 rounded-2xl p-5 shadow-sm shrink-0">
@@ -582,7 +582,7 @@ function ReportCardView({ user }) {
           
           {students.length > 0 ? (
             <div className="bg-stone-50 rounded-xl p-3 border border-stone-200 flex-1 overflow-y-auto">
-               <div className="flex flex-wrap gap-2">
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3 gap-2">
                  {students.map(s => {
                    const isDone = !!s.result;
                    const isActive = s.name === activeStudentName;
@@ -590,7 +590,7 @@ function ReportCardView({ user }) {
                      <button
                        key={s.name}
                        onClick={() => setActiveStudentName(s.name)}
-                       className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all shadow-sm
+                       className={`min-h-10 w-full px-3 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm whitespace-nowrap
                          ${isActive ? 'ring-2 ring-pink-500 transform scale-105' : 'hover:bg-opacity-80'}
                          ${isDone ? (isActive ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-emerald-50 border border-emerald-200 text-emerald-700') 
                                   : (isActive ? 'bg-white border-pink-200 text-stone-700' : 'bg-white border border-stone-200 text-stone-600')}`}
@@ -612,7 +612,7 @@ function ReportCardView({ user }) {
       {/* ======================================= */}
       {/* 右側欄：特質分析與評語結果 (佔用更大面積) */}
       {/* ======================================= */}
-      <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6 pb-16">
+      <div className="flex flex-col gap-6 pb-16">
         
         {/* 第三步：點選學生特質 */}
         <div className="bg-white rounded-2xl shadow-sm border border-pink-100 p-5 md:p-6 flex flex-col relative shrink-0">
@@ -636,8 +636,8 @@ function ReportCardView({ user }) {
             )}
           </div>
           
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
-            <div className="bg-sky-50 border border-sky-100 p-4 rounded-xl shadow-sm flex flex-col">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-5 mb-5">
+            <div className="bg-sky-50 border border-sky-100 p-3 md:p-4 rounded-xl shadow-sm flex flex-col">
               <label className="block text-sm font-extrabold text-sky-700 mb-3 flex items-center gap-1.5">🌟 優點 / 值得肯定之處</label>
               <TraitSelector 
                 options={STRENGTH_OPTIONS} activeTab={activeStrengthTab} setActiveTab={setActiveStrengthTab} 
@@ -649,14 +649,14 @@ function ReportCardView({ user }) {
               />
               <div className="mt-3 relative flex-1 flex flex-col">
                 <textarea 
-                  className="w-full bg-white border border-sky-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-200 outline-none resize-none h-24 text-stone-700 text-sm font-medium" 
+                  className="w-full bg-white border border-sky-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-200 outline-none resize-none h-20 2xl:h-24 text-stone-700 text-sm font-medium" 
                   placeholder="點擊上方標籤，或在此自由編輯優點..." 
                   value={strengths} onChange={(e) => handleTraitTextChange('strengths', e.target.value)} 
                 />
               </div>
             </div>
 
-            <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl shadow-sm flex flex-col">
+            <div className="bg-orange-50 border border-orange-100 p-3 md:p-4 rounded-xl shadow-sm flex flex-col">
               <label className="block text-sm font-extrabold text-orange-700 mb-3 flex items-center gap-1.5">🌱 待改進 / 需引導之處</label>
               <TraitSelector 
                 options={WEAKNESS_OPTIONS} activeTab={activeWeaknessTab} setActiveTab={setActiveWeaknessTab} 
@@ -668,7 +668,7 @@ function ReportCardView({ user }) {
               />
               <div className="mt-3 relative flex-1 flex flex-col">
                 <textarea 
-                  className="w-full bg-white border border-orange-200 rounded-xl p-3 focus:ring-2 focus:ring-orange-200 outline-none resize-none h-24 text-stone-700 text-sm font-medium" 
+                  className="w-full bg-white border border-orange-200 rounded-xl p-3 focus:ring-2 focus:ring-orange-200 outline-none resize-none h-20 2xl:h-24 text-stone-700 text-sm font-medium" 
                   placeholder="點擊上方標籤，或在此自由編輯待加強處..." 
                   value={weaknesses} onChange={(e) => handleTraitTextChange('weaknesses', e.target.value)} 
                 />
@@ -845,15 +845,15 @@ function TraitSelector({ options, activeTab, setActiveTab, toggleFn, currentText
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-1.5 border-b border-pink-100 pb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5 border-b border-pink-100 pb-2">
         {options.map((group, idx) => (
-          <button key={idx} onClick={() => setActiveTab(idx)} className={"px-3 py-1.5 rounded-full text-xs font-bold transition-colors " + (safeTab === idx ? "bg-pink-400 text-white shadow-md" : "bg-white text-pink-800 border border-pink-100 hover:bg-pink-50")}>
+          <button key={idx} onClick={() => setActiveTab(idx)} className={"min-h-8 px-2 py-1.5 rounded-full text-xs font-bold transition-colors leading-snug " + (safeTab === idx ? "bg-pink-400 text-white shadow-md" : "bg-white text-pink-800 border border-pink-100 hover:bg-pink-50")}>
             {group.label}
           </button>
         ))}
       </div>
       
-      <div className="flex flex-wrap gap-2 p-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-1">
         {currentGroup && currentGroup.options && currentGroup.options.map((opt, i) => {
           const isSelected = selectedItems.includes(opt);
           const themeClass = colorMap[currentGroup.theme] || colorMap['slate'];
@@ -863,7 +863,7 @@ function TraitSelector({ options, activeTab, setActiveTab, toggleFn, currentText
             <button 
               key={i} 
               onClick={() => toggleFn(opt)} 
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 ${btnClass}`}
+              className={`min-h-8 w-full px-2 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 leading-snug ${btnClass}`}
             >
               {opt}
             </button>
