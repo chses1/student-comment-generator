@@ -234,7 +234,6 @@ export default function App() {
         }
       } catch (err) {
         console.error("Auth init error:", err);
-        setAuthStatusMessage(getAuthErrorMessage(err, "登入狀態確認失敗，系統已先保留單機版使用。"));
         setIsAuthLoading(false);
       }
     };
