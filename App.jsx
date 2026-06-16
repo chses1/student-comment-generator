@@ -803,7 +803,7 @@ function ReportCardView({ user, authStatusMessage }) {
               />
               <div className="mt-3 relative flex-1 flex flex-col">
                 <textarea 
-                  className="w-full bg-white border border-sky-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-200 outline-none resize-none h-20 2xl:h-24 text-stone-700 text-sm font-medium" 
+                  className="w-full bg-white border border-sky-200 rounded-xl p-3 focus:ring-2 focus:ring-sky-200 outline-none resize-none h-24 2xl:h-28 text-stone-700 text-base font-medium" 
                   placeholder="點擊上方標籤，或在此自由編輯優點..." 
                   value={strengths} onChange={(e) => handleTraitTextChange('strengths', e.target.value)} 
                 />
@@ -822,7 +822,7 @@ function ReportCardView({ user, authStatusMessage }) {
               />
               <div className="mt-3 relative flex-1 flex flex-col">
                 <textarea 
-                  className="w-full bg-white border border-orange-200 rounded-xl p-3 focus:ring-2 focus:ring-orange-200 outline-none resize-none h-20 2xl:h-24 text-stone-700 text-sm font-medium" 
+                  className="w-full bg-white border border-orange-200 rounded-xl p-3 focus:ring-2 focus:ring-orange-200 outline-none resize-none h-24 2xl:h-28 text-stone-700 text-base font-medium" 
                   placeholder="點擊上方標籤，或在此自由編輯待加強處..." 
                   value={weaknesses} onChange={(e) => handleTraitTextChange('weaknesses', e.target.value)} 
                 />
@@ -1001,7 +1001,7 @@ function TraitSelector({ options, activeTab, setActiveTab, toggleFn, currentText
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-1.5 border-b border-pink-100 pb-2">
         {options.map((group, idx) => (
-          <button key={idx} onClick={() => setActiveTab(idx)} className={"min-h-8 px-2 py-1.5 rounded-full text-xs font-bold transition-colors leading-snug " + (safeTab === idx ? "bg-pink-400 text-white shadow-md" : "bg-white text-pink-800 border border-pink-100 hover:bg-pink-50")}>
+          <button key={idx} onClick={() => setActiveTab(idx)} className={"min-h-9 px-3 py-2 rounded-full text-sm font-bold transition-colors leading-snug " + (safeTab === idx ? "bg-pink-400 text-white shadow-md" : "bg-white text-pink-800 border border-pink-100 hover:bg-pink-50")}>
             {group.label}
           </button>
         ))}
@@ -1017,7 +1017,7 @@ function TraitSelector({ options, activeTab, setActiveTab, toggleFn, currentText
             <button 
               key={i} 
               onClick={() => toggleFn(opt)} 
-              className={`min-h-8 w-full px-2 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 leading-snug ${btnClass}`}
+              className={`min-h-9 w-full px-3 py-2 rounded-full text-sm font-bold border transition-all duration-200 leading-snug ${btnClass}`}
             >
               {opt}
             </button>
@@ -1026,7 +1026,7 @@ function TraitSelector({ options, activeTab, setActiveTab, toggleFn, currentText
       </div>
 
       <div className="flex items-center gap-2 mt-1">
-        <input type="text" placeholder={"找不到特質？自己輸入" + type + "... (按 Enter 加入)"} value={customValue} onChange={e => setCustomValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCustomAdd()} className={"flex-1 text-xs rounded-full px-4 py-2 outline-none border focus:ring-2 font-medium shadow-sm " + (type === '優點' ? "border-sky-200 focus:ring-sky-200 bg-sky-50" : "border-orange-200 focus:ring-orange-200 bg-orange-50")} />
+        <input type="text" placeholder={"找不到特質？自己輸入" + type + "... (按 Enter 加入)"} value={customValue} onChange={e => setCustomValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCustomAdd()} className={"flex-1 text-sm rounded-full px-4 py-2.5 outline-none border focus:ring-2 font-medium shadow-sm " + (type === '優點' ? "border-sky-200 focus:ring-sky-200 bg-sky-50" : "border-orange-200 focus:ring-orange-200 bg-orange-50")} />
         <button onClick={handleCustomAdd} disabled={!customValue.trim()} className={"p-2.5 rounded-full text-white shadow-sm disabled:opacity-50 " + (type === '優點' ? "bg-sky-400 hover:bg-sky-500" : "bg-orange-400 hover:bg-orange-500")}>
           <Plus size={16} strokeWidth={3} />
         </button>
