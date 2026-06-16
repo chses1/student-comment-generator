@@ -38,6 +38,21 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 const LOCAL_STORAGE_KEY = "student-comment-generator:classData";
 const APP_TITLE = "中山國小學生評語生成系統";
 const SCHOOL_LOGO_SRC = import.meta.env.BASE_URL + "chungshan-logo.jpg";
+const STUDENT_IMPORT_EXCLUDED_WORDS = new Set([
+  '姓名', '座號', '姓', '名', '座', '號', '性', '性別', '男', '女', '班級', '年級'
+]);
+
+const normalizeImportedNameToken = (token) => {
+  return token
+    .trim()
+    .replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - 0xFEE0));
+};
+
+const isValidStudentNameToken = (token) => {
+  if (!token || STUDENT_IMPORT_EXCLUDED_WORDS.has(token)) return false;
+  if (!/^[\u4e00-\u9fff·・]{2,5}$/.test(token)) return false;
+  return !/[一二三四五六七八九十百零〇\d]/.test(token);
+};
 
 const getGeminiApiKey = () => {
   const runtimeKey = typeof window !== 'undefined' ? window.__gemini_api_key__ : '';
@@ -617,6 +632,24 @@ function ReportCardView({ user, authStatusMessage }) {
     }
   };
 
+  const handleRemoveStudent = async (studentName) => {
+    const newList = students.filter(s => s.name !== studentName);
+
+    try {
+      await saveStudentList(newList);
+      if (activeStudentName === studentName) {
+        setActiveStudentName('');
+        setStrengths('');
+        setWeaknesses('');
+        setResult(null);
+      }
+      setErrorMsg('');
+    } catch (err) {
+      console.error("清除學生失敗", err);
+      setErrorMsg("清除學生失敗，請稍後再試一次。");
+    }
+  };
+
   return (
     <div className="max-w-none w-full mx-auto grid grid-cols-1 lg:grid-cols-[minmax(22rem,26rem)_minmax(0,1fr)] xl:grid-cols-[minmax(24rem,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(26rem,32rem)_minmax(0,1fr)] gap-4 xl:gap-6 h-full relative">
       
@@ -689,16 +722,35 @@ function ReportCardView({ user, authStatusMessage }) {
                    const isDone = !!s.result;
                    const isActive = s.name === activeStudentName;
                    return (
-                     <button
+                     <div
                        key={s.name}
-                       onClick={() => setActiveStudentName(s.name)}
-                       className={`min-h-10 w-full px-3 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm whitespace-nowrap
+                       className={`min-h-10 w-full rounded-xl text-sm font-bold flex items-stretch overflow-hidden transition-all shadow-sm whitespace-nowrap border
                          ${isActive ? 'ring-2 ring-pink-500 transform scale-105' : 'hover:bg-opacity-80'}
-                         ${isDone ? (isActive ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-emerald-50 border border-emerald-200 text-emerald-700') 
-                                  : (isActive ? 'bg-white border-pink-200 text-stone-700' : 'bg-white border border-stone-200 text-stone-600')}`}
+                         ${isDone ? (isActive ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-emerald-50 border-emerald-200 text-emerald-700') 
+                                  : (isActive ? 'bg-white border-pink-200 text-stone-700' : 'bg-white border-stone-200 text-stone-600')}`}
                      >
-                       {s.name} {isDone && <Check size={14} className="text-emerald-500" />}
-                     </button>
+                       <button
+                         type="button"
+                         onClick={() => setActiveStudentName(s.name)}
+                         className="min-w-0 flex-1 px-2 py-2 flex items-center justify-center gap-1.5"
+                       >
+                         <span className="truncate">{s.name}</span>
+                         {isDone && <Check size={14} className="text-emerald-500 shrink-0" />}
+                       </button>
+                       <button
+                         type="button"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleRemoveStudent(s.name);
+                         }}
+                         aria-label={`清除 ${s.name}`}
+                         title={`清除 ${s.name}`}
+                         className={`w-8 shrink-0 flex items-center justify-center border-l transition-colors
+                           ${isDone ? 'border-emerald-200 text-emerald-600 hover:bg-emerald-100' : 'border-stone-200 text-stone-400 hover:bg-rose-50 hover:text-rose-500'}`}
+                       >
+                         <X size={14} strokeWidth={3} />
+                       </button>
+                     </div>
                    );
                  })}
                </div>
@@ -1015,8 +1067,10 @@ function StudentListModal({ isOpen, onClose, students, setStudents }) {
   if (!isOpen) return null;
 
   const handleSave = () => {
-    const excludedWords = ['姓名', '座號', '姓', '名', '座', '號'];
-    const parsedList = inputText.split(/[\n\t\s,，、]+/).map(s => s.trim()).filter(s => s.length > 0 && isNaN(Number(s)) && excludedWords.indexOf(s) === -1);
+    const parsedList = inputText
+      .split(/[\n\t\s,，、]+/)
+      .map(normalizeImportedNameToken)
+      .filter(isValidStudentNameToken);
     const uniqueList = parsedList.filter((item, index) => parsedList.indexOf(item) === index);
     
     // 合併新舊名單，保留舊生的評語紀錄
